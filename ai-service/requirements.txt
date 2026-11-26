@@ -1,0 +1,5 @@
+# Servicio ligero (API, pipeline, exportadores, backend de demostración)
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7

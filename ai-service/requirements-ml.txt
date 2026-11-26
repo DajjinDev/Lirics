@@ -1,0 +1,22 @@
+# IA real: WhisperX (transcripción + alineación) y Demucs (separación de voz).
+#
+# REQUISITOS (verificados en los metadatos de las ruedas):
+#   - Python >= 3.10 y < 3.14  (whisperx 3.8.6).  Usa 3.12.  Python 3.14+ NO funciona todavía.
+#   - torch ~= 2.8.0 (whisperx lo fija)
+#
+# INSTALACIÓN en Windows con GPU NVIDIA (ejecuta en este orden, dentro del venv):
+#
+#   1) PyTorch con CUDA ANTES que lo demás (el PyPI de Windows trae solo CPU):
+#        pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+#      (si tu driver es más nuevo puedes usar cu128; comprueba con `nvidia-smi`)
+#
+#   2) El resto:
+#        pip install -r requirements-ml.txt
+#
+# Sin GPU: omite el paso 1 y usa LIRIKS_AI_DEVICE=cpu (mucho más lento).
+#
+# TAMAÑO: PyTorch+CUDA ≈ 2.5 GB; whisperx arrastra además pyannote, transformers, etc.
+#         Los modelos se descargan la primera vez que se usan (Whisper small ≈ 0.5 GB,
+#         alineador wav2vec2 ≈ 0.4–1.2 GB según el idioma, Demucs htdemucs ≈ 0.1 GB).
+whisperx==3.8.6
+demucs==4.1.0
