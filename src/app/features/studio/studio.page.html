@@ -1,0 +1,271 @@
+<main class="studio">
+  <header class="top">
+    <button type="button" class="icon-btn" aria-label="Volver al inicio" (click)="back()">
+      <app-icon name="back" />
+    </button>
+    <h1>Estudio de sincronización</h1>
+    <span class="spacer"></span>
+    <button type="button" class="icon-btn" aria-label="Deshacer el último cambio" [disabled]="!canUndo()" (click)="undo()">
+      <app-icon name="undo" />
+    </button>
+  </header>
+
+  <div class="grid">
+    <!-- ======================= Preparación ======================= -->
+    <section class="setup" aria-label="Preparación">
+      <div class="step">
+        <h2><span class="n" aria-hidden="true">1</span> Audio</h2>
+        <label
+          class="drop"
+          [class.over]="dragging()"
+          (dragover)="$event.preventDefault(); dragging.set(true)"
+          (dragleave)="dragging.set(false)"
+          (drop)="onDrop($event)"
+        >
+          <input type="file" accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg,.opus" class="sr-only" (change)="onAudioInput($event)" />
+          <app-icon name="upload" />
+          @if (file(); as f) {
+            <span class="drop-text"><strong>{{ f.name }}</strong><small>{{ (f.size / 1048576).toFixed(1) }} MB · clic para cambiar</small></span>
+          } @else {
+            <span class="drop-text"><strong>Elige o arrastra tu audio</strong><small>Solo se reproduce en tu navegador; no se sube a ningún sitio</small></span>
+          }
+        </label>
+        @if (fileError()) {
+          <p class="msg error" role="alert">{{ fileError() }}</p>
+        }
+        @if (playback.error(); as err) {
+          <p class="msg error" role="alert">{{ err.message }}</p>
+        }
+        @if (file()) {
+          <div class="player">
+            <app-progress-bar />
+            <app-playback-controls />
+          </div>
+        }
+      </div>
+
+      <div class="step">
+        <h2><span class="n" aria-hidden="true">2</span> Letra <small>(opcional)</small></h2>
+        <label class="sr-only" for="lyrics">Letra de la canción</label>
+        <textarea
+          id="lyrics"
+          rows="6"
+          spellcheck="false"
+          placeholder="Pega aquí la letra, una línea por verso. Con ella la IA la alinea al audio (mucho más precisa que transcribir). Sin letra, se transcribe."
+          [value]="lyricsText()"
+          (input)="lyricsText.set($any($event.target).value)"
+        ></textarea>
+        <div class="row-actions">
+          <label class="btn ghost">
+            <input type="file" accept=".lrc,.json,.txt,text/plain,application/json" class="sr-only" (change)="onLyricsFile($event)" />
+            <app-icon name="upload" /> Importar .lrc / .json / .txt
+          </label>
+        </div>
+        @if (importError()) {
+          <p class="msg error" role="alert">{{ importError() }}</p>
+        }
+      </div>
+
+      <div class="step">
+        <h2><span class="n" aria-hidden="true">3</span> Sincronizar</h2>
+
+        <div class="service" [class.ok]="health()" [class.bad]="!health() && !checking()">
+          @if (checking()) {
+            <span>Comprobando el servicio de IA…</span>
+          } @else if (health(); as h) {
+            <span>
+              <strong>Servicio de IA conectado</strong> · {{ h.backend === 'fake' ? 'MODO DEMOSTRACIÓN (sin modelos reales)' : 'WhisperX en ' + (h.device ?? '?') }}
+            </span>
+          } @else {
+            <span><strong>Servicio de IA no disponible.</strong> Puedes sincronizar a mano (abajo).</span>
+          }
+          <button type="button" class="link" (click)="checkService()">Reintentar</button>
+        </div>
+        @if (serviceError() && !health()) {
+          <p class="msg subtle">{{ serviceError() }}</p>
+        }
+        @if (isDemoService()) {
+          <p class="msg warn" role="note">
+            El servicio funciona en modo demostración: los tiempos NO son reales. Instala los modelos para obtener una sincronización real (ai-service/README.md).
+          </p>
+        }
+
+        <details class="adv">
+          <summary>Opciones</summary>
+          <label class="field">
+            <span>Idioma</span>
+            <select [value]="language()" (change)="language.set($any($event.target).value)">
+              @for (l of languages; track l.code) {
+                <option [value]="l.code">{{ l.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Modelo de Whisper</span>
+            <select [value]="model()" (change)="model.set($any($event.target).value)">
+              @for (m of models; track m) {
+                <option [value]="m" [selected]="m === model()">{{ m }}</option>
+              }
+            </select>
+          </label>
+          <label class="check">
+            <input type="checkbox" [checked]="separate()" (change)="separate.set($any($event.target).checked)" />
+            <span>Separar la voz antes (Demucs). Mejora canciones con mucho instrumental; tarda más.</span>
+          </label>
+          <label class="field">
+            <span>URL del servicio</span>
+            <input type="text" inputmode="url" spellcheck="false" [value]="serviceUrl()" (change)="setServiceUrl($event)" />
+          </label>
+        </details>
+
+        <label class="check rights">
+          <input type="checkbox" [checked]="rights()" (change)="rights.set($any($event.target).checked)" />
+          <span>Confirmo que este audio es mío o tengo autorización para procesarlo. <em>(Obligatorio para usar la IA.)</em></span>
+        </label>
+        @if (tooBig()) {
+          <p class="msg error" role="alert">El archivo supera el límite del servicio ({{ health()?.limits?.max_upload_mb }} MB).</p>
+        }
+
+        <div class="row-actions">
+          @if (running()) {
+            <button type="button" class="btn" (click)="cancelAi()">Cancelar</button>
+          } @else {
+            <button type="button" class="btn primary" [disabled]="!canRunAi()" (click)="runAi()">
+              <app-icon name="wand" /> Sincronizar con IA
+            </button>
+          }
+          <button type="button" class="btn" [disabled]="running()" (click)="useManual()">Sincronizar a mano</button>
+        </div>
+
+        @if (running()) {
+          <div class="job" role="status" aria-live="polite">
+            <div class="bar"><i [style.width.%]="progress() * 100"></i></div>
+            <span>{{ stageMsg() }} · {{ (progress() * 100).toFixed(0) }} %</span>
+          </div>
+        }
+        @if (jobError()) {
+          <p class="msg error" role="alert">{{ jobError() }}</p>
+        }
+      </div>
+    </section>
+
+    <!-- ======================= Trabajo ======================= -->
+    <section class="work" aria-label="Edición">
+      @if (doc(); as d) {
+        <div class="work-head">
+          <div class="tabs" role="tablist" aria-label="Vista">
+            <button type="button" role="tab" [attr.aria-selected]="tab() === 'edit'" (click)="tab.set('edit')">Editar</button>
+            <button type="button" role="tab" [attr.aria-selected]="tab() === 'preview'" (click)="tab.set('preview')">Vista previa</button>
+          </div>
+          <span class="spacer"></span>
+          <div class="export">
+            <button type="button" class="btn small" (click)="exportAs('lrc')"><app-icon name="download" /> LRC</button>
+            <button type="button" class="btn small" (click)="exportAs('lrc-enhanced')" title="LRC con tiempo por palabra"><app-icon name="download" /> LRC palabras</button>
+            <button type="button" class="btn small" (click)="exportAs('json')"><app-icon name="download" /> JSON</button>
+          </div>
+        </div>
+
+        @if (flash()) {
+          <p class="flash" role="status">{{ flash() }}</p>
+        }
+
+        @if (tab() === 'edit') {
+          <div class="meta-row">
+            <label class="field inline"><span>Título</span><input type="text" maxlength="120" [value]="title()" (input)="title.set($any($event.target).value)" /></label>
+            <label class="field inline"><span>Artista</span><input type="text" maxlength="120" [value]="artist()" (input)="artist.set($any($event.target).value)" /></label>
+          </div>
+
+          @for (w of d.warnings; track $index) {
+            <p class="msg" [class.warn]="true" role="note">{{ w }}</p>
+          }
+          @if (d.overallConfidence !== undefined) {
+            <p class="msg subtle">Confianza global: <strong>{{ (d.overallConfidence * 100).toFixed(0) }} %</strong>. Las líneas resaltadas necesitan revisión.</p>
+          }
+
+          <div class="tools-row">
+            @if (untimed() > 0) {
+              <button type="button" class="btn primary small" (click)="tap()">
+                <app-icon name="target" /> Marcar siguiente (T)
+              </button>
+              <span class="msg subtle">{{ untimed() }} línea(s) sin tiempo</span>
+            }
+            <span class="spacer"></span>
+            <span class="shift" role="group" aria-label="Desplazar todas las líneas">
+              Todo
+              <button type="button" class="step-btn" aria-label="Adelantar todo 0,1 s" (click)="shiftEverything(-100)">−</button>
+              <button type="button" class="step-btn" aria-label="Retrasar todo 0,1 s" (click)="shiftEverything(100)">+</button>
+            </span>
+            <button type="button" class="btn ghost small" (click)="sort()">Ordenar por tiempo</button>
+          </div>
+
+          <ol class="lines">
+            @for (l of d.lines; track l.id; let i = $index) {
+              <li
+                class="line"
+                [id]="'row-' + l.id"
+                [class.active]="l.id === activeId()"
+                [class.untimed]="l.startMs === null"
+                [class.low]="isLow(l)"
+                [class.issue]="issues().has(l.id)"
+              >
+                <button type="button" class="icon-btn mini" [attr.aria-label]="'Escuchar desde la línea ' + (i + 1)" [disabled]="l.startMs === null" (click)="seekTo(l)">
+                  <app-icon name="play" />
+                </button>
+                <input
+                  class="time"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="--:--"
+                  [attr.aria-label]="'Inicio de la línea ' + (i + 1)"
+                  [value]="fmt(l.startMs)"
+                  (change)="onTime(l, $event)"
+                />
+                <input
+                  class="txt"
+                  type="text"
+                  [attr.aria-label]="'Texto de la línea ' + (i + 1)"
+                  [value]="l.text"
+                  (change)="onText(l, $event)"
+                />
+                <span class="badges">
+                  @if (l.confidence !== undefined) {
+                    <span class="conf" [class.low]="isLow(l)" [title]="flagText(l) || 'Confianza del alineador'">{{ confidenceLabel(l) }}</span>
+                  }
+                  @if (issues().get(l.id); as msg) {
+                    <span class="conf low" [title]="msg">!</span>
+                  }
+                </span>
+                <span class="tools">
+                  <button type="button" class="icon-btn mini" [attr.aria-label]="'Marcar la línea ' + (i + 1) + ' en este instante'" title="Marcar aquí" (click)="markNow(l)"><app-icon name="target" /></button>
+                  <button type="button" class="icon-btn mini" [attr.aria-label]="'Adelantar la línea ' + (i + 1) + ' 0,1 s'" [disabled]="l.startMs === null" (click)="nudgeLine(l, -100)">−</button>
+                  <button type="button" class="icon-btn mini" [attr.aria-label]="'Retrasar la línea ' + (i + 1) + ' 0,1 s'" [disabled]="l.startMs === null" (click)="nudgeLine(l, 100)">+</button>
+                  <button type="button" class="icon-btn mini" [attr.aria-label]="'Insertar una línea después de la ' + (i + 1)" (click)="addAfter(l)"><app-icon name="plus" /></button>
+                  <button type="button" class="icon-btn mini" [attr.aria-label]="'Eliminar la línea ' + (i + 1)" (click)="remove(l)"><app-icon name="trash" /></button>
+                </span>
+              </li>
+            }
+          </ol>
+        } @else {
+          <div class="preview">
+            @if (preview(); as p) {
+              <app-synced-lyrics [lyrics]="p" [offsetMs]="0" />
+            } @else {
+              <p class="msg subtle">Aún no hay líneas con tiempo para previsualizar. Sincroniza o marca algunas líneas.</p>
+            }
+          </div>
+        }
+      } @else {
+        <div class="empty">
+          <h2>Convierte un audio en letras sincronizadas</h2>
+          <ol>
+            <li>Elige un audio <strong>tuyo o autorizado</strong>.</li>
+            <li>Pega la letra (opcional pero recomendado).</li>
+            <li>Sincroniza con la IA local, o a mano marcando cada línea con la tecla <kbd>T</kbd>.</li>
+            <li>Revisa, corrige y exporta a LRC o JSON.</li>
+          </ol>
+          <p class="msg subtle">La IA es un servicio aparte y opcional. Nada se envía a internet: el audio va solo a la URL de tu servicio local.</p>
+        </div>
+      }
+    </section>
+  </div>
+</main>

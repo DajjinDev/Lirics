@@ -1,0 +1,162 @@
+<main class="stage" [attr.data-mode]="mode()" [class.idle]="idle()" [class.has-video]="session.source()?.kind === 'youtube'">
+  <header class="topbar">
+    <button type="button" class="icon-btn" aria-label="Volver al buscador" (click)="back()">
+      <app-icon name="back" />
+    </button>
+    <div class="spacer"></div>
+    @if (session.track()) {
+      <button type="button" class="icon-btn" aria-label="Versión y fuente" (click)="openVersions()">
+        <app-icon name="list" />
+      </button>
+    }
+    <button type="button" class="icon-btn" aria-label="Cambiar modo de visualización (V)" title="Modo de visualización (V)" (click)="cycleMode()">
+      <app-icon name="view" />
+    </button>
+    <button type="button" class="icon-btn" aria-label="Personalizar" (click)="openSettings()">
+      <app-icon name="sliders" />
+    </button>
+    @if (canFullscreen) {
+      <button
+        type="button"
+        class="icon-btn"
+        [attr.aria-label]="fullscreen() ? 'Salir de pantalla completa' : 'Pantalla completa'"
+        (click)="toggleFullscreen()"
+      >
+        <app-icon [name]="fullscreen() ? 'collapse' : 'expand'" />
+      </button>
+    }
+  </header>
+
+  @if (session.uiState() === 'PLAYER_ERROR') {
+    <section class="fatal" role="alert">
+      <h1>No pudimos abrir esta canción</h1>
+      <p>{{ session.errorMessage() }}</p>
+      <button type="button" class="primary" (click)="back()">Volver al buscador</button>
+    </section>
+  } @else {
+    <div class="info">
+      <div class="head">
+        <app-album-artwork class="art" [src]="session.track()?.artworkUrl" [fallback]="session.track()?.artworkFallbackUrl" [alt]="session.track()?.title ?? 'la canción'" />
+        <div class="meta">
+          @for (k of trackKey(); track k) {
+            @if (session.track(); as t) {
+              <div class="enter">
+                <h1 class="title">{{ t.title }}</h1>
+                <p class="artist">{{ t.artist }}</p>
+                @if (t.album) {
+                  <p class="album">{{ t.album }}@if (t.year) { · {{ t.year }} }</p>
+                }
+              </div>
+            }
+          } @empty {
+            <div class="skeleton s-title"></div>
+            <div class="skeleton s-artist"></div>
+            <p class="sr-only" role="status">{{ session.loadingStep() }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="transport">
+        <app-progress-bar />
+        <app-playback-controls />
+        @if (playback.state() === 'READY' && !playback.isDemo()) {
+          <p class="hint" role="status">Pulsa reproducir para comenzar.</p>
+        }
+        <div class="sync">
+          <app-sync-adjust />
+        </div>
+      </div>
+
+      @if (session.source()?.kind === 'youtube') {
+        <div class="yt-wrap">
+          <div #ytHost class="yt" aria-label="Reproductor de YouTube"></div>
+          <p class="source-note">{{ session.sourceNote() }}</p>
+        </div>
+      }
+    </div>
+
+    <section class="lyrics" aria-label="Letras">
+      <div class="notices">
+        @if (playback.error(); as err) {
+          <div class="notice error" role="alert">
+            <p>{{ err.message }}</p>
+            <app-video-link-form fieldId="error-link" (linked)="attach($event)" />
+          </div>
+        }
+        @if (session.source()?.kind === 'demo') {
+          <div class="notice demo">
+            <p><strong>Modo demostración · sin audio.</strong> {{ session.sourceNote() }}</p>
+            <app-video-link-form fieldId="demo-link" (linked)="attach($event)" />
+          </div>
+        }
+        @if (session.lyricsStatus() === 'MATCH_UNCERTAIN') {
+          <div class="notice" role="status">
+            <p>{{ session.lyricsMessage() }}</p>
+            <button type="button" class="chip" (click)="openVersions()">Elegir otra versión</button>
+          </div>
+        }
+      </div>
+      @for (k of trackKey(); track k) {
+      <div class="lyrics-body enter">
+      @switch (session.lyricsStatus()) {
+        @case ('FOUND_SYNCED') {
+          @if (session.lyrics(); as l) {
+            <app-synced-lyrics [lyrics]="l" [offsetMs]="session.offsetMs()" />
+          }
+        }
+        @case ('MATCH_UNCERTAIN') {
+          @if (session.lyrics(); as l) {
+            <app-synced-lyrics [lyrics]="l" [offsetMs]="session.offsetMs()" />
+          }
+        }
+        @case ('FOUND_PLAIN') {
+          <div class="plain">
+            <p class="plain-note" role="status">{{ session.lyricsMessage() }} No hay marcas de tiempo, así que no se resaltan.</p>
+            <pre class="plain-text">{{ session.plainLyrics() }}</pre>
+          </div>
+        }
+        @case ('SEARCHING') {
+          <div class="state" role="status">
+            <div class="skeleton-lines" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <p>Buscando letras…</p>
+          </div>
+        }
+        @case ('INSTRUMENTAL') {
+          <div class="state" role="status">
+            <p class="big">Instrumental</p>
+            <p>Esta canción no tiene letra. Disfruta de la música.</p>
+          </div>
+        }
+        @case ('NOT_FOUND') {
+          <div class="state" role="status">
+            <p class="big">Sin letras sincronizadas</p>
+            <p>{{ session.lyricsMessage() ?? 'No encontramos letras para esta canción.' }}</p>
+            @if (session.alternatives().length) {
+              <button type="button" class="primary" (click)="openVersions()">Ver otras opciones</button>
+            }
+          </div>
+        }
+        @case ('ERROR') {
+          <div class="state" role="alert">
+            <p class="big">No pudimos cargar las letras</p>
+            <p>{{ session.lyricsMessage() }}</p>
+          </div>
+        }
+        @default {
+          <div class="state" aria-hidden="true">
+            <div class="skeleton-lines"><i></i><i></i><i></i><i></i></div>
+          </div>
+        }
+      }
+      </div>
+      }
+    </section>
+  }
+</main>
+
+<p class="toast" role="status" aria-live="polite" [class.show]="!!toast()">{{ toast() }}</p>
+
+<app-player-settings />
+<app-lyrics-versions (linked)="attach($event)" />

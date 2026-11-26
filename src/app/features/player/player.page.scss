@@ -1,0 +1,599 @@
+:host {
+  display: block;
+  height: 100dvh;
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(19rem, 38fr) minmax(0, 62fr);
+  gap: clamp(2rem, 5vw, 7rem);
+  height: 100dvh;
+  padding: calc(var(--safe-top) + clamp(1rem, 3vh, 2.5rem)) calc(var(--safe-right) + clamp(1.25rem, 4vw, 5rem))
+    calc(var(--safe-bottom) + clamp(1rem, 3vh, 2.5rem)) calc(var(--safe-left) + clamp(1.25rem, 4vw, 5rem));
+  overflow: hidden;
+}
+
+/* ---------- Barra superior ---------- */
+.topbar {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--safe-top) + 0.6rem);
+  left: calc(var(--safe-left) + 0.6rem);
+  right: calc(var(--safe-right) + 0.6rem);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: opacity calc(0.6s / var(--speed));
+}
+.spacer {
+  flex: 1;
+}
+.idle .topbar,
+.idle .sync {
+  opacity: 0;
+  pointer-events: none;
+}
+.idle {
+  cursor: none;
+}
+
+/* ---------- Columna izquierda ---------- */
+.info {
+  grid-column: 1;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2.6vh, 1.8rem);
+  max-height: 100%;
+  min-width: 0;
+  padding-block: 2.5rem 0.5rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.info::-webkit-scrollbar {
+  display: none;
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2.6vh, 1.6rem);
+}
+.art {
+  width: min(100%, calc(50dvh * var(--cover-scale)), calc(30rem * var(--cover-scale)));
+}
+.has-video .art {
+  width: min(100%, calc(34dvh * var(--cover-scale)), calc(22rem * var(--cover-scale)));
+}
+.title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.artist {
+  margin: 0.3rem 0 0;
+  font-size: var(--fs-artist);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.album {
+  margin: 0.2rem 0 0;
+  font-size: var(--fs-meta);
+  color: var(--color-text-tertiary);
+}
+.transport {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 30rem;
+}
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-meta);
+  color: var(--color-text-secondary);
+}
+.sync {
+  margin-top: 0.4rem;
+  transition: opacity calc(0.6s / var(--speed));
+  opacity: 0.75;
+}
+.sync:hover,
+.sync:focus-within {
+  opacity: 1;
+}
+
+/* ---------- Video de YouTube (siempre visible: política del proveedor) ---------- */
+.yt-wrap {
+  max-width: 30rem;
+}
+.yt {
+  width: min(100%, 24rem);
+  aspect-ratio: 16 / 9;
+  min-height: 200px; // el reproductor incrustado nunca baja de 200 px
+  overflow: hidden;
+  border-radius: 0.8rem;
+  background: #000;
+  box-shadow: 0 1rem 2rem -0.8rem rgb(0 0 0 / 0.6);
+}
+.yt ::ng-deep iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.source-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+}
+
+.notice {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 34rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.1rem;
+  background: rgb(10 8 16 / 0.55);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+
+  p {
+    margin: 0;
+    line-height: 1.45;
+  }
+  strong {
+    color: var(--color-text-primary);
+  }
+  &.error {
+    box-shadow: inset 0 0 0 1px rgb(255 160 140 / 0.45);
+  }
+}
+
+/* ---------- Columna derecha: letras ---------- */
+.lyrics {
+  grid-column: 2;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+.notices {
+  position: absolute;
+  z-index: 2;
+  top: 2.6rem;
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+.notices > * {
+  pointer-events: auto;
+}
+.chip {
+  justify-self: start;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.plain {
+  height: 100%;
+  overflow-y: auto;
+  padding: 3rem 0 4rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+}
+.plain-note {
+  margin: 0 0 1.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.plain-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: clamp(1.25rem, 1rem + 1vw, 2rem);
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.state {
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.8rem;
+  color: var(--color-text-secondary);
+  font-size: 1.05rem;
+
+  p {
+    margin: 0;
+    max-width: 30rem;
+  }
+  .big {
+    font-size: clamp(1.8rem, 1.2rem + 1.6vw, 3rem);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+  }
+}
+.primary {
+  margin-top: 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+}
+
+.fatal {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  max-width: 32rem;
+  text-align: center;
+  display: grid;
+  gap: 0.8rem;
+  justify-items: center;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
+    letter-spacing: -0.02em;
+  }
+  p {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+}
+
+/* ---------- Esqueletos de carga ---------- */
+.skeleton,
+.skeleton-lines i {
+  display: block;
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.07));
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+.s-title {
+  width: 70%;
+  height: 1.8rem;
+}
+.s-artist {
+  width: 45%;
+  height: 1.1rem;
+  margin-top: 0.6rem;
+}
+.skeleton-lines {
+  display: grid;
+  gap: 1.3rem;
+  width: min(100%, 36rem);
+  i {
+    height: 2.4rem;
+    border-radius: 0.7rem;
+  }
+  i:nth-child(1) {
+    width: 90%;
+  }
+  i:nth-child(2) {
+    width: 70%;
+  }
+  i:nth-child(3) {
+    width: 82%;
+  }
+  i:nth-child(4) {
+    width: 55%;
+  }
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Portátiles de poca altura: se compacta la columna para que el reproductor de YouTube siga entero a la vista */
+@media (max-height: 860px) and (min-width: 900px) {
+  .art {
+    width: min(100%, calc(36dvh * var(--cover-scale)), calc(24rem * var(--cover-scale)));
+  }
+  .has-video .art {
+    width: min(100%, calc(20dvh * var(--cover-scale)), calc(22rem * var(--cover-scale)));
+  }
+  .album,
+  .source-note {
+    display: none;
+  }
+  .info {
+    gap: 0.9rem;
+  }
+}
+
+/* ==========================================================================
+   Diseño compacto: las letras son protagonistas; la portada pasa a un
+   encabezado pequeño y los controles quedan abajo. Se usa en pantallas
+   estrechas y en los modos cinematográfico y karaoke.
+   ========================================================================== */
+@mixin compact($s) {
+  #{$s} {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'head'
+      'yt'
+      'lyrics'
+      'transport';
+    gap: 0.9rem;
+    padding-inline: calc(var(--safe-left) + 1.1rem) calc(var(--safe-right) + 1.1rem);
+    padding-top: calc(var(--safe-top) + 3.6rem);
+  }
+  #{$s} .info {
+    display: contents;
+  }
+  #{$s} .head {
+    grid-area: head;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+  #{$s} .art,
+  #{$s}.has-video .art {
+    flex: none;
+    width: clamp(3.6rem, 16vw, 5.5rem);
+  }
+  #{$s} .meta {
+    min-width: 0;
+  }
+  #{$s} .title {
+    font-size: clamp(1.15rem, 1rem + 1vw, 1.6rem);
+  }
+  #{$s} .artist {
+    margin-top: 0.1rem;
+  }
+  #{$s} .album,
+  #{$s} .source-note {
+    display: none;
+  }
+  #{$s} .yt-wrap {
+    grid-area: yt;
+    max-width: none;
+  }
+  #{$s} .yt {
+    width: 100%;
+    max-width: 24rem;
+    margin-inline: auto;
+  }
+  /* Los avisos ocupan su propio espacio en lugar de superponerse a las letras */
+  #{$s} .lyrics {
+    grid-area: lyrics;
+    display: flex;
+    flex-direction: column;
+  }
+  #{$s} .lyrics > :not(.notices) {
+    flex: 1;
+    min-height: 0;
+  }
+  #{$s} .notices {
+    position: static;
+    margin-bottom: 0.4rem;
+  }
+  #{$s} .notice {
+    max-width: none;
+  }
+  #{$s} .transport {
+    grid-area: transport;
+    max-width: none;
+    gap: 0.3rem;
+  }
+  #{$s} .sync {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 899px), (max-aspect-ratio: 1 / 1) {
+  @include compact('.stage');
+}
+@each $m in cinematic, karaoke {
+  @include compact('.stage[data-mode="#{$m}"]');
+}
+
+/* Teléfonos en horizontal: poca altura */
+@media (max-height: 520px) and (orientation: landscape) {
+  .stage {
+    grid-template-columns: minmax(14rem, 34fr) minmax(0, 66fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: none;
+    padding-top: calc(var(--safe-top) + 0.8rem);
+  }
+  .info {
+    display: flex;
+    gap: 0.6rem;
+    padding-top: 2.2rem;
+  }
+  .head {
+    flex-direction: row;
+    gap: 0.8rem;
+  }
+  .art,
+  .has-video .art {
+    width: 4.5rem;
+  }
+  .yt {
+    width: 100%;
+  }
+  .lyrics,
+  .transport,
+  .yt-wrap,
+  .head {
+    grid-area: auto;
+  }
+}
+
+/* ==========================================================================
+   Modos de visualización
+   ========================================================================== */
+
+/* Cinematográfico y karaoke: letras centradas y a todo el ancho */
+.stage[data-mode='cinematic'],
+.stage[data-mode='karaoke'] {
+  .head {
+    justify-content: center;
+  }
+  .lyrics app-synced-lyrics {
+    width: min(100%, 76rem);
+    margin-inline: auto;
+  }
+  .transport {
+    justify-self: center;
+    width: min(100%, 34rem);
+  }
+}
+.stage[data-mode='cinematic'] .transport,
+.stage[data-mode='karaoke'] .transport {
+  transition: opacity calc(0.6s / var(--speed));
+}
+.idle .transport {
+  opacity: 0.3;
+}
+.idle .transport:hover,
+.idle .transport:focus-within {
+  opacity: 1;
+}
+
+/* Escritorio: el reproductor de YouTube va junto a los controles (misma fila inferior) para no restar espacio a las letras */
+@media (min-width: 900px) and (min-aspect-ratio: 1 / 1) {
+  .stage[data-mode='cinematic'],
+  .stage[data-mode='karaoke'] {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'head head'
+      'lyrics lyrics'
+      'yt transport';
+    column-gap: clamp(1rem, 3vw, 3rem);
+    .head {
+      justify-self: center;
+    }
+    .yt-wrap {
+      align-self: end;
+      width: 22rem;
+    }
+    .yt {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+    .transport {
+      align-self: end;
+    }
+  }
+}
+
+/* Portada: la carátula manda, las letras son secundarias */
+.stage[data-mode='cover'] {
+  grid-template-columns: minmax(22rem, 48fr) minmax(0, 52fr);
+  .art {
+    width: min(100%, calc(60dvh * var(--cover-scale)), calc(38rem * var(--cover-scale)));
+  }
+  &.has-video .art {
+    width: min(100%, calc(36dvh * var(--cover-scale)), calc(24rem * var(--cover-scale)));
+  }
+}
+@media (max-width: 899px), (max-aspect-ratio: 1 / 1) {
+  .stage[data-mode='cover'] {
+    grid-template-columns: minmax(0, 1fr);
+    .head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .art,
+    &.has-video .art {
+      width: clamp(8rem, 42vw, calc(14rem * var(--cover-scale)));
+    }
+    .album {
+      display: block;
+    }
+  }
+}
+
+/* Minimalista: sin sombras ni efectos decorativos */
+.stage[data-mode='minimal'] {
+  .yt {
+    box-shadow: none;
+  }
+}
+
+/* ---------- Transiciones entre canciones ---------- */
+.enter {
+  animation: enter-up calc(0.75s / var(--speed)) var(--ease-out) both;
+}
+.meta .enter .artist {
+  animation: enter-up calc(0.75s / var(--speed)) var(--ease-out) calc(0.07s / var(--speed)) both;
+}
+.meta .enter .album {
+  animation: enter-up calc(0.75s / var(--speed)) var(--ease-out) calc(0.14s / var(--speed)) both;
+}
+.lyrics-body {
+  height: 100%;
+  animation-delay: calc(0.12s / var(--speed));
+}
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* ---------- Aviso breve (cambio de modo) ---------- */
+.toast {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 1.6rem);
+  translate: -50% 0;
+  margin: 0;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background: rgb(10 8 16 / 0.7);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
+  font-size: 0.85rem;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.25s var(--ease-out);
+}
+.toast.show {
+  opacity: 1;
+  transform: none;
+}
+
+/* Portada en portátiles de poca altura: el video de YouTube debe seguir entero a la vista */
+@media (max-height: 860px) and (min-width: 900px) {
+  .stage[data-mode='cover'] {
+    .art {
+      width: min(100%, calc(46dvh * var(--cover-scale)), calc(30rem * var(--cover-scale)));
+    }
+    &.has-video .art {
+      width: min(100%, calc(17dvh * var(--cover-scale)), calc(20rem * var(--cover-scale)));
+    }
+    .album {
+      display: none;
+    }
+  }
+}
